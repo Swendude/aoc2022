@@ -6,4 +6,6 @@ with open("./input.txt", "r") as inputFile:
         else:
             elves[-1].append(int(line.strip()))
     caloriesPerElf = list(map(sum, elves))
-    print(max(caloriesPerElf))
+    sortedElves = sorted(caloriesPerElf)
+    # print(sortedElves)
+    print(sum(sortedElves[-3:]))
