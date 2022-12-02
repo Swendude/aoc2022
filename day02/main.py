@@ -13,9 +13,10 @@ wins = {
     "paper": "rock",
 }
 
+loses = {wins[k]: k for k in wins}
+
 
 def choice_points(choice):
-    choice = choices[choice]
     if choice == "rock":
         return 1
     if choice == "paper":
@@ -25,7 +26,6 @@ def choice_points(choice):
 
 
 def rps_points(opp, you):
-    opp, you = choices[opp], choices[you]
     if opp == you:
         return 3
     if wins[you] == opp:
@@ -34,9 +34,21 @@ def rps_points(opp, you):
         return 0
 
 
+def select_choice(opp, outcome):
+    if outcome == "X":
+        return wins[opp]  # lose
+    if outcome == "Y":
+        return opp  # draw
+    if outcome == "Z":
+        return loses[opp]  # win
+
+
 with open("input.txt", "r") as inp:
     total = 0
     for line in inp:
-        opp, you = line.strip().split(" ")
+        opp, outcome = line.strip().split(" ")
+        opp = choices[opp]
+        you = select_choice(opp, outcome)
+        # print(opp, you)
         total += rps_points(opp, you) + choice_points(you)
     print(total)
