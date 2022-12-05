@@ -40,12 +40,17 @@ def parse_moveline(line):
 
 
 def modify_stack(stack, mover):
-    # print(mover)
-    # stackPrint(stack)
-    for i in range(mover["amount"]):
-        box = stack[mover["fromStack"]].pop()
-        stack[mover["toStack"]].append(box)
-    return stack
+    print(mover)
+    stackPrint(stack)
+    stackCopy = {**stack}
+    remains, lifted = (
+        stack[mover["fromStack"]][: -mover["amount"]],
+        stack[mover["fromStack"]][-mover["amount"] :],
+    )
+    stackCopy[mover["fromStack"]] = remains
+    stackCopy[mover["toStack"]] = [*stack[mover["toStack"]], *lifted]
+    stackPrint(stackCopy)
+    return stackCopy
 
 
 with open("input.txt", "r") as inpfile:
