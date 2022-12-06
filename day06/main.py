@@ -1,5 +1,5 @@
 with open("input.txt") as inpfile:
-    offset = 4
+    offset = 14
     line = inpfile.readline()
     for i, char in enumerate(line):
         next_four = line[i : i + offset]
