@@ -46,31 +46,41 @@ def calcate_size(files):
     return sum([int(file[0]) for file in files])
 
 
-def get_size(directory):
+dirs_size = []
+
+
+def get_size(name, directory):
     total = 0
     for dir in directory["dirs"]:
-        size = get_size(directory["dirs"][dir])
+        size = get_size(dir, directory["dirs"][dir])
         total += size
     total += calcate_size(directory["files"])
+    dirs_size.append((name, total))
     return total
 
 
-def get_small_dirs(directory):
-    small_dirs_size = []
-    size = get_size(directory)
-    if size < 100000:
-        small_dirs_size.append(size)
-    for dir in directory["dirs"]:
-        small_dirs_size += get_small_dirs(directory["dirs"][dir])
-    return small_dirs_size
+# def get_small_dirs(directory, size):
+#     small_dirs_size = []
+#     size = get_size(directory)
+#     if size > size:
+#         small_dirs_size.append(size)
+#     for dir in directory["dirs"]:
+#         small_dirs_size += get_small_dirs(directory["dirs"][dir], size)
+#     return small_dirs_size
 
 
 # print(get_size(fs["dirs"]["/"]))
-# total_size = 70000000
-# required_space = 30000000
-# space_taken = get_size(fs["dirs"]["/"])
-# space_left = total_size - space_taken
-# to_delete = required_space - space_left
+total_size = 70000000
+required_space = 30000000
+space_taken = get_size("/", fs["dirs"]["/"])
+space_left = total_size - space_taken
+to_delete = required_space - space_left
 
-# print(to_delete)
-print(sum(get_small_dirs(fs["dirs"]["/"])))
+print(to_delete)
+get_size("/", fs["dirs"]["/"])
+print(
+    sorted(
+        list(filter(lambda ns: ns[1] > to_delete, dirs_size)), key=(lambda ns: ns[1])
+    )
+)
+# print(get_small_dirs(fs["dirs"]["/"], to_delete))
