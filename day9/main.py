@@ -13,7 +13,6 @@ def draw_grid(size, h_pos, t_pos, t_visits):
             print(row)
         row = ""
         for x in range(-size, size):
-
             if [x, y] == h_pos:
                 row += "H"
             elif [x, y] == t_pos:
@@ -28,7 +27,7 @@ def draw_grid(size, h_pos, t_pos, t_visits):
 
 with open("input.txt", "r") as inpfile:
     h_pos = [0, 0]
-    t_pos = [0, 0]
+    rope = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
     t_visits = [[0, 0]]
     for instruction in inpfile.readlines():
         instruction, amount = instruction.split(" ")
@@ -44,41 +43,37 @@ with open("input.txt", "r") as inpfile:
 
         for i in range(int(amount)):
             h_pos = add_coords(h_pos, mod)
-            dif_x, dif_y = sub_coords(h_pos, t_pos)
-            distance = abs(dif_x) + abs(dif_y)
-            print(distance)
-            if abs(dif_x) > 1 or abs(dif_y) > 1:
-                print("SHOULD MOVE")
-                if dif_x > 0 and dif_y > 0:
-                    print("T RIGHT & DOWN")
-                    t_pos = add_coords(t_pos, [1, 1])
-                elif dif_x < 0 and dif_y < 0:
-                    print("T LEFT & UP")
-                    t_pos = add_coords(t_pos, [-1, -1])
-                elif dif_x > 0 and dif_y < 0:
-                    print("T RIGHT & UP")
-                    t_pos = add_coords(t_pos, [1, -1])
-                elif dif_x < 0 and dif_y > 0:
-                    print("T LEFT & UP")
-                    t_pos = add_coords(t_pos, [-1, 1])
-                elif dif_x > 0:
-                    print("T RIGHT")
-                    t_pos = add_coords(t_pos, [1, 0])
-                elif dif_x < 0:
-                    print("T LEFT")
-                    t_pos = add_coords(t_pos, [-1, 0])
-
-                elif dif_y > 0:
-                    print("T DOWN")
-                    t_pos = add_coords(t_pos, [0, 1])
-
-                elif dif_y < 0:
-                    print("T UP")
-                    t_pos = add_coords(t_pos, [0, -1])
-
-            t_visits.append(t_pos)
-            # print("INST:", instruction)
-            # print("DIF:", dif_x, dif_y)
-            # draw_grid(5, h_pos, t_pos, t_visits)
-            # print("----")
+            following = h_pos
+            for t_i, t in enumerate(rope):
+                t_pos = rope[t_i]
+                dif_x, dif_y = sub_coords(following, t_pos)
+                distance = abs(dif_x) + abs(dif_y)
+                # print(distance)
+                if abs(dif_x) > 1 or abs(dif_y) > 1:
+                    if dif_x > 0 and dif_y > 0:
+                        t_pos = add_coords(t_pos, [1, 1])
+                    elif dif_x < 0 and dif_y < 0:
+                        t_pos = add_coords(t_pos, [-1, -1])
+                    elif dif_x > 0 and dif_y < 0:
+                        t_pos = add_coords(t_pos, [1, -1])
+                    elif dif_x < 0 and dif_y > 0:
+                        t_pos = add_coords(t_pos, [-1, 1])
+                    elif dif_x > 0:
+                        t_pos = add_coords(t_pos, [1, 0])
+                    elif dif_x < 0:
+                        t_pos = add_coords(t_pos, [-1, 0])
+                    elif dif_y > 0:
+                        t_pos = add_coords(t_pos, [0, 1])
+                    elif dif_y < 0:
+                        t_pos = add_coords(t_pos, [0, -1])
+                    print(t_pos)
+                    rope[t_i] = t_pos
+                following = t_pos
+            t_visits.append(rope[-1])
+            print(rope)
+        # print("INST:", instruction)
+        # print("DIF:", dif_x, dif_y)
+        # draw_grid(50, h_pos, t_pos, t_visits)
+        # print("----")
+    print(t_visits)
     print(len(set([str(visit) for visit in t_visits])))
