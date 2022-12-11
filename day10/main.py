@@ -4,14 +4,11 @@ BufferItem = namedtuple("BufferItem", ["command", "value", "cyclesLeft"])
 
 BufferItem.__repr__ = lambda bi: f"{bi.command} {bi.value} ({bi.cyclesLeft})"
 with open("input.txt") as inpfile:
+    crt = []
     command_buffer = []
     x = 1
-    result = 0
-    for cycle in range(220):
-
-        # print("BEGIN", cycle, x)
-        # print(list(filter(lambda c: c.cyclesLeft >= 0, command_buffer)))
-        # new_buffer = command_buffer.copy()
+    for cycle in range(241):
+        # crt.append(str(cycle))
 
         for cc, command in enumerate(command_buffer):
             command_buffer[cc] = BufferItem(
@@ -19,9 +16,6 @@ with open("input.txt") as inpfile:
             )
             if command.cyclesLeft == 0:
                 x += command.value
-
-        if (cycle) in [19, 59, 99, 139, 179, 219]:
-            result += (cycle + 1) * x
         if len(list(filter(lambda c: c.cyclesLeft >= 0, command_buffer))) == 0:
             try:
                 command = next(inpfile).strip()
@@ -30,9 +24,15 @@ with open("input.txt") as inpfile:
                         BufferItem("add", int(command.split(" ")[1]), 1)
                     )
             except Exception as e:
-
                 pass
-        # print("END", cycle, x)
-        # print(list(filter(lambda c: c.cyclesLeft >= 0, command_buffer)))
-        # print("====")
-    print(result)
+        print(cycle, x, [x - 1, x, x + 1])
+        if (cycle % 40) in [x - 1, x, x + 1]:
+            crt += "#"
+            # print(crt)
+        else:
+            crt += "."
+
+    print(crt)
+    for i, j in [[0, 40], [40, 80], [80, 120], [120, 160], [160, 200], [200, 240]]:
+        # print(i, j)
+        print("".join(crt[i:j]))
