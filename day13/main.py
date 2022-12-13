@@ -1,8 +1,8 @@
 from pprint import pprint
 from typing import Union
+import functools
 
-
-signal = Union[list[int], int]
+signal = Union[list[list[int]], list[int], int]
 
 
 def compare(l: signal, r: signal) -> int:
@@ -29,17 +29,17 @@ def compare(l: signal, r: signal) -> int:
             try:
                 lefti = l[i]
             except IndexError:
-                print("left ran out first, correct")
+                # print("left ran out first, correct")
                 return 1
             try:
                 righti = r[i]
             except IndexError:
-                print("right ran out first, incorrect")
+                # print("right ran out first, incorrect")
                 return -1
-            print(f"--Comparing {l} and {r} on index {i}")
+            # print(f"--Comparing {l} and {r} on index {i}")
             orderCorrect = compare(lefti, righti)
             if orderCorrect != 0:
-                print(f"---decision made for {l} and {r} on index {i}")
+                # print(f"---decision made for {l} and {r} on index {i}")
                 return orderCorrect
     # print("±±±±±±±±±±±±±ERROROROROROR±±±±±±±±±±±±±")
     return 0
@@ -47,13 +47,21 @@ def compare(l: signal, r: signal) -> int:
 
 with open("input.txt") as inpfile:
     correct: list[int] = []
-    pairs: list[tuple[signal, signal]] = [
-        (eval(p[0]), eval(p[1]))
-        for p in [pair.split("\n") for pair in inpfile.read().split("\n\n")]
-    ]
-    for i, pair in enumerate(pairs):
-        print(f"\nPair {i + 1} ==")
-        if compare(pair[0], pair[1]) == 1:
-            correct.append(i + 1)
+    # signals: list[list[signal]] = [pair.split("\n") for pair in inpfile.read().split("\n")]
 
-    print(sum(correct))
+    signals: list[signal] = [
+        eval(signal) for signal in inpfile.read().split("\n") if signal
+    ]
+
+    markers: list[signal] = [[[2]], [[6]]]
+    sortedsignals = sorted(
+        signals + markers, key=functools.cmp_to_key(compare), reverse=True
+    )
+    print((sortedsignals.index(markers[0]) + 1) * (sortedsignals.index(markers[1]) + 1))
+
+    # for i, pair in enumerate(pairs):
+    #     print(f"\nPair {i + 1} ==")
+    #     if compare(pair[0], pair[1]) == 1:
+    #         correct.append(i + 1)
+
+    # print(sum(correct))
