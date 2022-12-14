@@ -1,17 +1,20 @@
 import math
-
+import tqdm
 from pprint import pprint
 import itertools
 import time
 
 
-def printGrid(g: dict[tuple[int, int], str], sand: list[tuple[tuple[int, int], bool]]):
+def printGrid(
+    g: dict[tuple[int, int], str],
+    sand: list[tuple[tuple[int, int], bool]],
+):
     allX = [key[0] for key in g.keys()]
     allY = [key[1] for key in g.keys()]
     min_y = 0
-    min_x = min(allX) - 1
-    max_y = max(allY) + 1
-    max_x = max(allX) + 1
+    min_x = min(allX) - 10
+    max_y = max(allY) + 5
+    max_x = max(allX) + 10
     rows: dict[int, list[str]] = {}
     row: list[str] = []
     allSand = list(map(lambda sand: sand[0], sand))
@@ -21,9 +24,12 @@ def printGrid(g: dict[tuple[int, int], str], sand: list[tuple[tuple[int, int], b
         key=lambda t: t[1],
     ):
         if (x, y) in allSand:
-            row.append("o")
+            row.append("⚠️")
+        elif y == (max_y + 2):
+            row.append("🪨")
         elif (x, y) in g:
             row.append(g[(x, y)])
+
         else:
             row.append(".")
         if x == max_x - 1:
@@ -39,7 +45,7 @@ def printGrid(g: dict[tuple[int, int], str], sand: list[tuple[tuple[int, int], b
         print(hrow)
 
     for i in rows:
-        print(f"{i} {''.join(rows[i])}")
+        print(f"{i}\t {''.join(rows[i])}")
 
 
 with open("input.txt", "r") as inpfile:
@@ -58,38 +64,52 @@ with open("input.txt", "r") as inpfile:
             if f[1] == s[1]:
                 # horizontal
                 for i in range(f[0], s[0] + 1):
-                    grid[(i, f[1])] = "#"
+                    grid[(i, f[1])] = "🪨"
             elif f[0] == s[0]:
                 # vertical
                 for i in range(f[1], s[1] + 1):
-                    grid[(f[0], i)] = "#"
+                    grid[(f[0], i)] = "🪨"
             else:
                 raise (Exception("Diagonal line?"))
     currentSand: list[tuple[tuple[int, int], bool]] = [((500, 0), False)]
-    print("\033c", end="")
-    print("======")
-    printGrid(grid, currentSand)
+
+    toVisit: list[tuple[int, int]] = []
+    floor = max([key[1] for key in grid.keys()]) + 1
     round = 0
-    while True:
-        blockers = [*grid.keys(), *list(map(lambda s: s[0], currentSand))]
+
+    def play():
+        while True:
+            yield
+
+    blockers = set([*grid.keys(), *list(map(lambda s: s[0], currentSand))])
+
+    for _ in tqdm.tqdm(play()):
         (x, y), resting = currentSand[-1]
-        if y > max([key[1] for key in grid.keys()]):
-            print(len(currentSand[:-1]))
+        if currentSand[-1] == ((500, 0), True):
             break
         if resting:
-            currentSand.append(((500, 0), False))
+            blockers.add(currentSand[-1][0])
+            if len(toVisit) and (next := toVisit.pop()):
+                currentSand.append((next, False))
+            else:
+                currentSand.append(((500, 0), False))
         else:
-            if not (down := (x, y + 1)) in blockers:
+            if y == floor:
+                currentSand[-1] = ((x, y), True)
+            elif not (down := (x, y + 1)) in blockers:
+                if not (x, y) in toVisit:
+                    toVisit.append((x, y))
                 currentSand[-1] = (down, False)
             elif not (down := (x - 1, y + 1)) in blockers:
+                if not (x, y) in toVisit:
+                    toVisit.append((x, y))
                 currentSand[-1] = (down, False)
             elif not (down := (x + 1, y + 1)) in blockers:
+                if not (x, y) in toVisit:
+                    toVisit.append((x, y))
                 currentSand[-1] = (down, False)
             else:
                 currentSand[-1] = ((x, y), True)
 
-        # print("\033c", end="")
-        # time.sleep(0.033)
-        print(f"=={round}===")
-        round += 1
-        # printGrid(grid, currentSand)
+    # printGrid(grid, currentSand)
+    print(len(currentSand))
