@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+with open("input_test.txt", "r") as inpfile:
+=======
 import math
 import tqdm
 from pprint import pprint
@@ -49,16 +52,28 @@ def printGrid(
 
 
 with open("input.txt", "r") as inpfile:
+>>>>>>> 1ff88b51d94a448d04131bdad383a0dbfb15f37a
     lines: list[list[tuple[int, int]]] = [
         list(map(lambda c: tuple(map(int, c.split(","))), line.split("->")))
         for line in inpfile.read().split("\n")
     ]
 
+<<<<<<< HEAD
+    all_y = [item[1] for sublist in lines for item in sublist]
+    all_x = [item[0] for sublist in lines for item in sublist]
+    # print(min(all_x))
+    # print(max(all_y))
+    grid: list[list[str]] = [[]]
+=======
     grid: dict[tuple[int, int], str] = {}
+>>>>>>> 1ff88b51d94a448d04131bdad383a0dbfb15f37a
     for chunk in lines:
         for i in range(len(chunk) - 1):
             f: tuple[int, int] = chunk[i]
             s: tuple[int, int] = chunk[i + 1]
+<<<<<<< HEAD
+            print(f, s)
+=======
             f, s = sorted([f, s])
 
             if f[1] == s[1]:
@@ -113,3 +128,4 @@ with open("input.txt", "r") as inpfile:
 
     # printGrid(grid, currentSand)
     print(len(currentSand))
+>>>>>>> 1ff88b51d94a448d04131bdad383a0dbfb15f37a
