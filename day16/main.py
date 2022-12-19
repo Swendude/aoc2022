@@ -1,144 +1,112 @@
+import time
 import re
 from pprint import pprint
 from typing import NamedTuple, Union, NewType
+from itertools import permutations
 from tqdm import tqdm
+import math
 
 pattern = re.compile(
-    r"Valve ([A-Z]+) has flow rate=(\d+); tunnel[s]? lead[s]? to valve[s]? ([[A-Z, ]*]*)"
+    r"Valve ([A-Z]+) has flow rate=(\d+); tunnel[s]? lead[s]? to valve[s]? ([A-Z, ]*)"
 )
 
-Valve = NamedTuple("Valve", [("fr", int), ("reachables", list[str])])
+Valve = NamedTuple("Valve", [("fr", int), ("reachables", dict[str, tuple[int, str]])])
+
+
+def updateRoutings(
+    current: str,
+    nb: str,
+    old: dict[str, tuple[int, str]],
+    new: dict[str, tuple[int, str]],
+    dist: int,
+) -> dict[str, tuple[int, str]]:
+    old = dict(old)
+    for nk in new:
+        if nk == current:
+            continue
+
+        if nk in old and old[nk][0] > (dist + new[nk][0]):
+            old[nk] = (dist + new[nk][0], nb)
+
+        elif nk not in old:
+            old[nk] = (dist + new[nk][0], nb)
+
+    return old
 
 
 with open("input_test.txt") as inpfile:
     lines = inpfile.read().split("\n")
-    valvesg: dict[str, Valve] = {}
+    valvesRouting: dict[str, Valve] = {}
     for line in lines:
         match = re.match(pattern, line.strip())
         if match:
             valve, fr, reachable = match.groups()
-            valvesg[valve] = Valve(
+            valvesRouting[valve] = Valve(
                 int(fr),
-                [r.strip() for r in reachable.split(",")],
+                {r.strip(): (1, r.strip()) for r in reachable.split(",")},
             )
-    all_valves = list(valvesg.keys())
-    # pprint(list(valvesg.keys()))
-
-    all_mapped_paths = {}
-
-    all_paths: list[list[str]] = [["AA"]]
-    i = 0
+    # pprint(valvesRouting)
+    # start routing, every valve askes the routing table for every reachable and updates with lowest score
+    print("building routing...")
     while True:
-        print(i)
-        # for path in all_paths:
-        #     print(i, path)
-        # print("----")
-        new_paths: list[list[str]] = []
-        for path in all_paths:
+        before_ser = str(valvesRouting)
+        current_valvesRouting = dict(valvesRouting)
+        for valve in valvesRouting:
+            this_valve = current_valvesRouting[valve]
+            current_reachables = dict(this_valve.reachables)
+            direct_nbs = [
+                r for r in current_reachables if current_reachables[r][0] == 1
+            ]
+            new_reachables = dict(current_reachables)
+            for nb in direct_nbs:
+                nb_r = dict(current_valvesRouting[nb].reachables)
+                nb_d = current_reachables[nb][0]
+                new_reachables = updateRoutings(valve, nb, new_reachables, nb_r, nb_d)
+            valvesRouting[valve] = Valve(valvesRouting[valve].fr, new_reachables)
+        after_ser = str(valvesRouting)
 
-            if len(path) == 10:
-                new_paths.append(path)
-            else:
-                # print(path[-1], valvesg[path[-1]].reachables)
-                for reachable in valvesg[path[-1]].reachables:
-                    # print([*path, reachable])
-                    new_paths.append([*path, reachable])
-            # print(len(new_paths))
-        all_paths = new_paths
-
-        i += 1
-
-        if len(list(filter(lambda p: len(p) != 10, all_paths))) == 0:
+        if after_ser == before_ser:
             break
+    print("routing builded!")
 
-    for path in all_paths:
-        print(i, path)
+    routings = [len(valvesRouting[v].reachables) for v in valvesRouting]
+    print(routings)
+    # pprint(valvesRouting["JJ"])
 
-    # potential_flow: dict[str, list[tuple[list[str], int]]] = {}
+    # print(list(permutations([key for key in valvesRouting if valvesRouting[key].fr])))
 
-    # for valve in valvesg:
-    #     potential_flow[valve] = [
-    #         ([v], valvesg[v].fr) for v in valvesg[valve].reachables
-    #     ]
+    # target_lists = [["DD", "BB", "JJ", "HH", "EE", "CC"]]
 
-    # # pprint(potential_flow["AA"])
+    results: list[int] = []
+    target_valves = [key for key in valvesRouting if valvesRouting[key].fr]
+    result_pairs = []
 
-    # Path = NamedTuple(
-    #     "Path",
-    #     [
-    #         ("steps", list[str]),
-    #         ("open", list[str]),
-    #         ("frs", list[int]),
-    #     ],
-    # )
-    # # startOptions = potential_flow["AA"]
-    # options: list[Path] = [Path(["AA"], [], [])]
-    # print(options)
-    # new_options: list[tuple[int, list[str], int]] = []
+    def travel(target_list: list[str], valvesRouting: dict[str, Valve]):
+        current = "AA"
+        opened: list[str] = []
+        total = 0
+        targetI = 0
+        target: Union[None, str] = None
+        for _ in range(30):
+            added_flow = sum([valvesRouting[v].fr for v in opened])
+            total += added_flow
+            # print(f"Valves {', '.join(opened)} are open. Producing {added_flow} flow")
+            currentRouting = valvesRouting[current]
 
-    # for option in potential_flow["AA"]:
-    #     for sec_option in potential_flow[option[1][-1]]:
-    #         new_options.append(
-    #             (
-    #                 option[0] + sec_option[0],
-    #                 [*option[1], *sec_option[1]],
-    #                 option[2] + sec_option[2],
-    #             )
-    #         )
-    # potential_flow["AA"] = new_options
+            if not target:
+                if targetI > len(target_list) - 1:
+                    # print(f"No more valves")
+                    continue
+                target = target_list[targetI]
+                targetI += 1
+                # print(f"Target set to {target}")
 
-    # pprint(potential_flow["AA"])
-
-    # Path = NamedTuple(
-    #     "Path",
-    #     [
-    #         ("costs", list[int]),
-    #         ("visited", list[str]),
-    #         ("open", list[str]),
-    #         ("frs", list[int]),
-    #     ],
-    # )
-    # startOptions = potential_flow["AA"]
-    # options: list[Path] = [
-    #     Path([cost], [valve], [valve], [fr]) for (cost, valve, fr) in startOptions
-    # ]
-
-    # pprint(options)
-
-    # while True:
-    #     # print("---")
-    #     # pprint(options)
-    #     new_options: list[Path] = []
-    #     time_left = list(filter(lambda op: sum(op[0]) <= 30, options))
-    #     if not time_left:
-    #         break
-    #     for option in time_left:
-    #         costs, valves, opened, frs = option
-    #         if sum(costs) <= 30:
-    #             ncost, nvalve, nfr = max(potential_flow[valves[-1]], key=lambda t: t[2])
-    #             if nvalve in opened:
-    #                 new_options.append(
-    #                     Path([*costs, ncost - 1], [*valves, nvalve], opened, frs)
-    #                 )
-    #             else:
-    #                 new_options.append(
-    #                     Path(
-    #                         [*costs, ncost],
-    #                         [*valves, nvalve],
-    #                         [*opened, nvalve],
-    #                         [*frs, nfr],
-    #                     )
-    #                 )
-    #         else:
-    #             new_options.append(option)
-    #         options = new_options
-    # break
-
-    # pprint(options)
-    #     else:
-    #         new_options.append(option)
-    # options = new_options
-    # pprint(options)
-
-    # pprint(potential_flow)
-    # pprint(options)
+            # move to target if not there
+            if target != current:
+                current = currentRouting.reachables[target][1]
+                # print(f"Move to {current}")
+            else:
+                # print(f"Open {current}")
+                opened.append(target)
+                target = None
+        return total
