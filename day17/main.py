@@ -1,8 +1,6 @@
-from tqdm import tqdm
 from typing import Union, Literal, NamedTuple
 from pprint import pprint
 import os
-from tqdm import tqdm
 import time
 import math
 
@@ -17,7 +15,7 @@ rocks: list[block] = [
 ]
 
 BlockPosition = NamedTuple(
-    "BlockPosition", [("resting", bool), ("rockI", int), ("rockR", int), ("rockH", int)]
+    "BlockPosition", [("rockI", int), ("rockR", int), ("rockH", int)]
 )
 
 Grid = list[BlockPosition]
@@ -39,50 +37,47 @@ def blockToCells(b: BlockPosition) -> list[tuple[int, int]]:
     return results
 
 
-def gridMax(g: Grid) -> int:
-    if not grid:
-        return 0
-    return max(map(lambda b: b.rockH + len(rocks[b.rockI]), g))
+# def gridMax(g: Grid) -> int:
+#     if not grid:
+#         return 0
+#     return max(map(lambda b: b.rockH + len(rocks[b.rockI]), g))
 
 
-def printGrid(g: Grid, w: int = 7) -> None:
-    maxH = max(10, gridMax(g))
-    print(" ", "".join(["-" for _ in range(w)]))
-    rockCells = [blockToCells(bp) for bp in grid]
+# def printGrid(g: Grid, w: int = 7) -> None:
+#     maxH = max(10, gridMax(g))
+#     print(" ", "".join(["-" for _ in range(w)]))
+#     rockCells = [blockToCells(bp) for bp in grid]
 
-    for row in reversed(range(maxH)):
-        sRow: str = ""
-        for col in range(w):
-            rock_here = [i for (i, rc) in enumerate(rockCells) if (col, row) in rc]
-            if len(rock_here) > 1:
-                sRow += str("!")
-            elif rock_here:
-                # sRow += str(rock_here[0])
-                sRow += str("#")
-            else:
-                sRow += "."
+#     for row in reversed(range(maxH)):
+#         sRow: str = ""
+#         for col in range(w):
+#             rock_here = [i for (i, rc) in enumerate(rockCells) if (col, row) in rc]
+#             if len(rock_here) > 1:
+#                 sRow += str("!")
+#             elif rock_here:
+#                 # sRow += str(rock_here[0])
+#                 sRow += str("#")
+#             else:
+#                 sRow += "."
 
-        print(str(row).ljust(1), sRow)
-        sRow = ""
-    print(" ", "".join([str(c) for c in range(w)]))
+#         print(str(row).ljust(1), sRow)
+#         sRow = ""
+#     print(" ", "".join([str(c) for c in range(w)]))
 
 
 def hits(bp: BlockPosition):
     bpCells = set(blockToCells(bp))
-    # filledCells = set(
-    #     [item for sublist in [blockToCells(bp) for bp in g] for item in sublist]
-    # )
     return bool(len(bpCells.intersection(blockers)))
 
 
 def drop(bp: BlockPosition) -> BlockPosition:
-    return BlockPosition(bp.resting, bp.rockI, bp.rockR, bp.rockH - 1)
+    return BlockPosition(bp.rockI, bp.rockR, bp.rockH - 1)
 
 
 def blow(bp: BlockPosition, mod: int) -> BlockPosition:
     bw = blockWidth(bp)
     if bp.rockR + bw + mod < 8 and bp.rockR + mod >= 0:
-        return BlockPosition(bp.resting, bp.rockI, bp.rockR + mod, bp.rockH)
+        return BlockPosition(bp.rockI, bp.rockR + mod, bp.rockH)
     else:
         return bp
 
@@ -110,63 +105,70 @@ def saveState(
         if blocker[1] > (gridH - depth)
     ]
     serialized = str(serializedBlockers) + str(rockI) + str(jetI)
-    if serialized in [state[0] for state in states]:
-        # print("CYCLE:")
-        # print(gridH)
-        # print([state[1] for state in states if state[0] == serialized][0])
-        # print(gridH - [state[1] for state in states if state[0] == serialized][0])
+    if old := [state for state in states if state[0] == serialized]:
+        last = old[0]
+        # print(last)
+        # print(
+        #     f"CYCLE: saw this same state at iteration {last[-1]}, current iteration {rockN}."
+        # )
+        # print(f"Difference is {gridH} - {last[1]}= {gridH - last[1]}")
         return (
-            rockN - [state[2] for state in states if state[0] == serialized][0],
-            gridH - [state[1] for state in states if state[0] == serialized][0],
+            rockN - last[2],
+            gridH - last[1],
         )
     states.append((serialized, gridH, rockN))
 
-    # print("--", serialized)
 
-
-hs: list[int] = []
-
-with open("input_test.txt", "r") as inpfile:
+puzzleFile, iterations, correct = [
+    ("input_test.txt", 1000000000000, 1514285714288),
+    ("input_test.txt", 2022, 3068),
+    ("input.txt", 2022, 3090),
+    ("input.txt", 1000000000000, 0),
+][-1]
+with open(puzzleFile, "r") as inpFile:
+    cycle_check = True
     start = time.time()
-    jets: list[str] = list(inpfile.read().strip())
-    # grid: Grid = [BlockPosition(False, 0, 2, 3)]
-    grid: Grid = []
+    jets: list[str] = list(inpFile.read().strip())
     jetI = 0
     rockI = 0
-    rockM = 2022
+    rockM = iterations
     while True:
         print(rockI)
         rockR = 2
         rockH = gridH + 3
-        grid.append(BlockPosition(False, rockI % len(rocks), rockR, rockH))
+        current = BlockPosition(rockI % len(rocks), rockR, rockH)
         hitted = False
         while not hitted:
-            # os.system("cls" if os.name == "nt" else "clear")
-            # print(grid[-1])
-            # printGrid(grid)
-            # # time.sleep(0.2)
             currentJet = jets[jetI % len(jets)]
 
             # blow
-            blown = blow(grid[-1], 1 if currentJet == ">" else -1)
+            blown = blow(current, 1 if currentJet == ">" else -1)
             if not hits(blown):
-                grid[-1] = blown
+                current = blown
 
             # fall
-            dropped = drop(grid[-1])
-
+            dropped = drop(current)
             if hits(dropped) or dropped.rockH < 0:
-                gridH = updateBlockers(grid[-1], blockers, gridH)
-                cycle_dh = saveState(
-                    blockers, rockI % len(rocks), jetI % len(jets), gridH, rockI
-                )
-                if cycle_dh:
-                    rockI += math.floor((rockM - rockI) / cycle_dh[0]) * cycle_dh[0]
-                    gridH += math.floor((rockM - rockI) / cycle_dh[0]) * cycle_dh[1]
+                gridH = updateBlockers(current, blockers, gridH)
                 hitted = True
-                # input()
+                if cycle_check:
+                    dcycle_dh = saveState(
+                        blockers, rockI % len(rocks), jetI % len(jets), gridH, rockI
+                    )
+
+                    if dcycle_dh:
+                        print(dcycle_dh)
+                        cycles_left = rockM - rockI
+                        fits = math.floor(cycles_left / dcycle_dh[0])
+                        if fits:
+                            print(f"Left: {rockM - rockI}, cycle fits {fits} time")
+                            deltaH = fits * dcycle_dh[1]
+                            gridH += deltaH
+                            blockers = {(y, x + deltaH) for (y, x) in blockers}
+                            rockI += fits * dcycle_dh[0]
+
             else:
-                grid[-1] = dropped
+                current = dropped
 
             jetI += 1
         rockI += 1
@@ -174,5 +176,5 @@ with open("input_test.txt", "r") as inpfile:
             break
 
     print(time.time() - start, "s")
-    print(gridMax(grid))
     print(gridH)
+    print(gridH == correct)
