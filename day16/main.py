@@ -67,29 +67,17 @@ with open("input.txt") as inpfile:
         if after_ser == before_ser:
             break
     print("routing builded!")
-    # pprint(valvesRouting)
-    # calculated: list[list[str]] = []
 
     def travel(
         target_list: list[str],
         routing: dict[str, Valve],
         startOpened: list[str] = [],
     ) -> tuple[int, int, list[str]]:
-        # print("INCOMING T: ", target_list)
         current = target_list[0]
         opened = list(startOpened)
         total = 0
-        # target: Union[None, str] = None
         minutes = 0
         for target in target_list[1:]:
-            # print("-")
-            # print("c: ", current)
-            # print("t: ", target)
-            # print("o: ", opened)
-            # print("t: ", total)
-            # print("m: ", minutes)
-            # print(routing[current].reachables)
-            # input()
             minutes_passed = routing[current].reachables[target][0] + 1
             minutes += minutes_passed
 
@@ -98,7 +86,6 @@ with open("input.txt") as inpfile:
             opened.append(target)
             current = target
 
-        # total += (30 - minutes) * sum([routing[v].fr for v in opened])
         return (minutes, total, opened)
 
     def add_t(
@@ -115,14 +102,29 @@ with open("input.txt") as inpfile:
     #         travel(["BB", "JJ", "HH", "EE", "CC"], valvesRouting, ["DD", "BB"]),
     #     )
     # )
+    max_minutes = 26
 
-    # target_lists = permutations([key for key in valvesRouting if valvesRouting[key].fr])
+    def get_flowr_minute(routing: dict[str, Valve], opened: list[str]) -> int:
+        return sum([routing[v].fr for v in opened])
 
-    # IF I CAN GENERATE ALL PERMUTATIONS FOR N = n - 1 I CAN GENERATE ALL PERMUTATIONS FOR N
+    def finalize_route(
+        route: tuple[int, int, list[str]], max_minutes: int, routing: dict[str, Valve]
+    ):
+        return route[1] + get_flowr_minute(routing, route[-1]) * (
+            max_minutes - route[0]
+        )
+
+    # your_travel = travel(["AA", "JJ", "BB", "CC"], valvesRouting)
+    # el_travel = travel(["AA", "DD", "HH", "EE"], valvesRouting)
+    # print(your_travel, el_travel)
+    # print(
+    #     finalize_route(your_travel, max_minutes, valvesRouting)
+    #     + finalize_route(el_travel, max_minutes, valvesRouting)
+    # )
 
     result_pairs: dict[tuple[str, ...], tuple[int, int, list[str]]] = {}
     target_valves = [key for key in valvesRouting if valvesRouting[key].fr]
-    print(target_valves)
+
     perms: set[tuple[str, ...]] = {("AA",)}
     current_l = 1
     result_pairs[("AA",)] = (0, 0, [])
@@ -130,8 +132,8 @@ with open("input.txt") as inpfile:
         print(current_l)
         for np in [p for p in perms if len(p) == current_l]:
             for option in target_valves:
-                # print(option, np, np in result_pairs, np in perms)
-                if option in np or result_pairs[np][0] > 30:
+
+                if option in np or result_pairs[np][0] > max_minutes:
                     continue
                 result_pairs[(*np, option)] = add_t(
                     result_pairs[np],
@@ -141,91 +143,67 @@ with open("input.txt") as inpfile:
                         result_pairs[np][-1],
                     ),
                 )
-                # print("adding")
+
                 if result_pairs[(*np, option)][0] < 30:
                     perms.add((*np, option))
-                    # print("ADDED: ", (*np, option), result_pairs[(*np, option)][0])
-                # else:
-                # print("TOO LONG: ", (*np, option), result_pairs[(*np, option)][0])
+
         current_l += 1
 
-    def get_flowr_minute(routing: dict[str, Valve], opened: list[str]) -> int:
-        return sum([routing[v].fr for v in opened])
+    # your_travel = result_pairs[("AA", "JJ", "BB", "CC")]
+    # their_travel = result_pairs[("AA", "DD", "HH", "EE")]
+    # print(
+    #     finalize_route(your_travel, 26, valvesRouting)
+    #     + finalize_route(their_travel, 26, valvesRouting)
+    # )
+    l = target_valves
+    # print(l)
+    # l = ["BB", "CC", "DD", "JJ"]
+    options: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    splits_seen: list[
+        tuple[
+            tuple[str, ...],
+            tuple[str, ...],
+        ]
+    ] = []
+    for p in permutations(l):
+        for i in range(1, len(p)):
+            # if (p[1:], p[:1]) in splits_seen:
+            #     print("skipped")
+            #     continue
+            # splits_seen.append((p[:1], p[1:]))
+            options += [
+                (("AA", *lps[0]), ("AA", *lps[1]))
+                for lps in list(product(permutations(p[:i]), permutations(p[i:])))
+            ]
+    # pprint(options)
+    # pprint([option for option in options if option[0] == ("AA", "BB", "DD")])
+    # print((("AA", "JJ", "BB", "CC"), ("AA", "DD", "HH", "EE")) in options)
+    # print((("AA", "DD", "HH", "EE"), ("AA", "JJ", "BB", "CC")) in options)
 
-    # pprint([p for p in perms])
-    # pprint(result_pairs)
-    # print(len(target_valves))
-    # print(max([len(p) for p in perms]))
+    # l = target_valves
+    # print(target_valves)
+    # options: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    # for i in range(0, len(l)):
+    #     options += [
+    #         (("AA", *l[0]), ("AA", *l[1]))
+    #         for l in list(product(permutations(l[:i]), permutations(l[i:])))
+    #     ]
+    # pprint(options)
+
     paths = [
-        (v[0], v[1] + get_flowr_minute(valvesRouting, v[-1]) * (30 - v[0]), v[2], k)
-        for (k, v) in result_pairs.items()
-        if v[0] <= 30
+        (
+            l,
+            finalize_route(result_pairs[l[0]], 26, valvesRouting)
+            + finalize_route(result_pairs[l[1]], 26, valvesRouting),
+        )
+        for l in options
     ]
-    pprint(max(paths, key=lambda t: t[1]))
-    # print(max(paths))
-    # target_lists = [["DD", "BB", "JJ", "HH", "EE", "CC"]]
-    # results: list[int] = []
-    # target_valves = [key for key in valvesRouting if valvesRouting[key].fr]
 
-    # result_pairs: dict[tuple[str, ...], tuple[int, int]] = {}
-
-    # for target_list in tqdm(target_lists, total=math.factorial(15)):
-    #     # results.append(travel(["AA"] + list(target_list), valvesRouting)[1])
-    #     for slice in range(1, len(target_list)):
-    #         before, after = target_list[:slice], target_list[slice:]
-    #         # print(before, after)
-    #         if before not in result_pairs:
-    #             if not before[:-1] in result_pairs:
-    #                 result_pairs[before] = travel(list(before), valvesRouting)
-    #             else:
-    #                 # print(list(before[-2:]))
-    #                 oneLess_m, oneLess_t = result_pairs[before[:-1]]
-    #                 latest_m, latest_t = travel(
-    #                     list(before[-2:]), valvesRouting, oneLess_t
-    #                 )
-    #                 result_pairs[before] = (oneLess_m + latest_m, oneLess_t + latest_t)
-    #             break
-
-    #         if after not in result_pairs:
-    #             if not after[:-1] in result_pairs:
-    #                 result_pairs[after] = travel(list(after), valvesRouting)
-    #             else:
-    #                 oneLess_m, oneLess_t = result_pairs[after[:-1]]
-    #                 latest_m, latest_t = travel(
-    #                     list(after[-2:]), valvesRouting, oneLess_t
-    #                 )
-    #                 result_pairs[after] = (oneLess_m + latest_m, oneLess_t + latest_t)
-    #             break
-    #         result_pairs[before + after] = (
-    #             result_pairs[before][0] + result_pairs[after][0],
-    #             result_pairs[before][1] + result_pairs[after][1],
-    #         )
-    #         break
-
-    #         break
-
-    #     #         result_pairs[sp] = (
-    #     #             before_m + after_m,
-    #     #             before_t + after_t,
-    #     #         )
-
-    #     # else:
-    #     #     tqdm.write("Shkip")
-    #     #     break
-    #     # tqdm.write("hit!")
-    # # input()
-    # #     tail_m, tail_t = travel(
-    # #         list(target_list[slice:]),
-    # #         valvesRouting,
-    # #         sp[-1],
-    # #         startMinute=result_pairs[sp][0],
-    # #     )
-    # #     head_m, head_t = result_pairs[sp]
-    # #     if head_t + tail_m <
-
-    # # print(target_list)
-    # # print(list(result_pairs.keys()))
-    # # input()
-    # # break
-    # print(max(results))
-    # pprint(result_pairs)
+    # # print(len(options))
+    pprint(max([path for path in paths], key=lambda t: t[1]))
+    # paths = [
+    #     (v[0], finalize_route(v, 30, valvesRouting), k)
+    #     for (k, v) in result_pairs.items()
+    #     if v[0] <= 30
+    # ]
+    # pprint(max(paths, key=lambda t: t[1]))
